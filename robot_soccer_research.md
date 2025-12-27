@@ -28,6 +28,7 @@
 ## 示例代码框架（C++，使用 ZED SDK + OpenCV）
 
 > 完整可编译示例见仓库根目录 `zedmini_prob_grid.cpp`。
+> Python 版本示例见 `zedmini_prob_grid.py`。
 
 ```cpp
 #include <sl/Camera.hpp>

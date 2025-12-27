@@ -5,3 +5,4 @@
 
 面向 RoboCup 人型（KidSize）找球/踢球决策的开源库调研与概率栅格示例，请参阅[robot_soccer_research.md](robot_soccer_research.md)。
 可编译的 ZED Mini 概率栅格示例代码见 [zedmini_prob_grid.cpp](zedmini_prob_grid.cpp)。
+如需 Python 版本示例，请参阅 [zedmini_prob_grid.py](zedmini_prob_grid.py)。
