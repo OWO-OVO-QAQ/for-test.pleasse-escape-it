@@ -36,6 +36,7 @@ struct Grid {
   int w, h; float res;               // 分辨率 m/格
   std::vector<float> log_odds;       // 初值 0
   float l_hit = 0.7f, l_miss = -0.4f, l_decay = 0.98f;
+  Grid(int w_, int h_, float res_) : w(w_), h(h_), res(res_), log_odds(w_*h_, 0.0f) {}
   int idx(int x, int y) const { return y * w + x; }
   void decay() { for (auto &v : log_odds) v *= l_decay; }
   void updateCell(int x, int y, bool hit) {
@@ -51,13 +52,15 @@ bool detectBall(const cv::Mat &bgr, cv::Point &px_center) {
   cv::inRange(hsv, cv::Scalar(5,120,120), cv::Scalar(25,255,255), mask);
   std::vector<std::vector<cv::Point>> cnts;
   cv::findContours(mask, cnts, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
-  double bestArea = 0; cv::Point best;
+  double bestArea = 0; cv::Point best(0, 0);
   for (auto &c : cnts) {
     double a = cv::contourArea(c);
     if (a > 80 && a > bestArea) {
       bestArea = a;
       cv::Moments m = cv::moments(c);
-      best = {int(m.m10/m.m00), int(m.m01/m.m00)};
+      if (m.m00 != 0) {
+        best = {int(m.m10/m.m00), int(m.m01/m.m00)};
+      }
     }
   }
   if (bestArea == 0) return false;
@@ -71,8 +74,10 @@ int main() {
   p.depth_mode = sl::DEPTH_MODE::ULTRA; // 精度高，算力不足时可用 PERFORMANCE
   if (zed.open(p) != sl::ERROR_CODE::SUCCESS) return 1;
 
-  Grid grid{120, 120, 0.05f}; // 6m x 6m 覆盖区
+  Grid grid(120, 120, 0.05f); // 6m x 6m 覆盖区
   sl::Mat zedImage, zedDepth;
+  auto calib = zed.getCameraInformation().camera_configuration.calibration_parameters.left_cam;
+  float fx = calib.fx, fy = calib.fy, cx = calib.cx, cy = calib.cy;
 
   while (true) {
     if (zed.grab() != sl::ERROR_CODE::SUCCESS) continue;
@@ -85,11 +90,12 @@ int main() {
       float depth;
       zedDepth.getValue(px.x, px.y, &depth);
       if (std::isfinite(depth) && depth > 0.2f && depth < 6.0f) {
-        // 相机系到机器人平面坐标（简化：假设相机坐标系前为 +Z，下为 +Y）
-        float X = (px.x - zedImage.getWidth()/2.0f) * depth / p.camera_fov_h; // 简化，实际应用 K 矩阵
-        float Y = depth;
+        // 相机系到机器人平面坐标（使用内参矩阵 K）
+        float X = (px.x - cx) * depth / fx;
+        float Y = (px.y - cy) * depth / fy;
+        float Z = depth;
         int gx = int(X / grid.res) + grid.w/2;
-        int gy = int(Y / grid.res);
+        int gy = int(Z / grid.res);
         grid.updateCell(gx, gy, true);
       }
     }
