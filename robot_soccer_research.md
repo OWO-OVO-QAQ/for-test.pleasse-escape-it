@@ -29,6 +29,7 @@
 
 > 完整可编译示例见仓库根目录 `zedmini_prob_grid.cpp`。
 > Python 版本示例见 `zedmini_prob_grid.py`。
+> ROS 2 Humble 节点示例见 `ros_ball_grid_node.py`（订阅球像素+深度并生成概率栅格）。
 
 ```cpp
 #include <sl/Camera.hpp>
